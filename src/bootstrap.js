@@ -45,6 +45,9 @@ const startCore = () => {
         .replace('<css>', (oaConfig.css ?? '').replaceAll('\\', '\\\\').replaceAll('`', '\\`')));
 
       if (oaConfig.js) bw.webContents.executeJavaScript(oaConfig.js);
+
+      bw.setBackgroundColor('#00000000');
+      vibe.applyEffect(bw, 'acrylic');
     });
   });
 
@@ -99,6 +102,7 @@ const startUpdate = () => {
 
   splash.events.once('APP_SHOULD_LAUNCH', () => {
     if (!process.env.OPENASAR_NOSTART) startCore();
+    // require('./config').open();
   });
 
   let done;
