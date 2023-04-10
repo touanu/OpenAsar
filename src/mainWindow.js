@@ -25,20 +25,32 @@ const themesync = async () => {
   if (value !== pastValue) DiscordNative.userDataCache.cacheUserData(JSON.stringify(cached));
 };
 
-
-// Settings info version injection
+// Settings injection
 setInterval(() => {
   const host = [...document.querySelectorAll('[class*="info-"] [class*="line-"]')].find(x => x.textContent.startsWith('Host '));
   if (!host || document.querySelector('#openasar-ver')) return;
 
-  const el = document.createElement('span');
-  el.id = 'openasar-ver';
+  const oaVersion = host.cloneNode(true);
+  oaVersion.id = 'openasar-ver';
+  oaVersion.textContent = 'OpenAsar <channel> ';
+  oaVersion.onclick = () => DiscordNative.ipc.send('DISCORD_UPDATED_QUOTES', 'o');
 
-  el.textContent = 'OpenAsar <hash>';
-  el.onclick = () => DiscordNative.ipc.send('DISCORD_UPDATED_QUOTES', 'o');
+  const oaHash = document.querySelector('[class*="versionHash-"]').cloneNode(true);
+  oaHash.textContent = '(<hash>)';
+  oaVersion.appendChild(oaHash);
 
-  host.append(document.createTextNode(' | '), el);
-}, 2000);
+  host.insertAdjacentElement('afterend', oaVersion);
+
+  let advanced = document.querySelector('[class*="socialLinks-"]').parentElement.querySelector('[class*="header"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"] + [class*="item"]');
+  if (!advanced) return;
+  if (advanced.nextSibling.className.includes('item')) advanced = advanced.nextSibling;
+
+  const oaSetting = advanced.cloneNode(true);
+  oaSetting.textContent = 'OpenAsar';
+  oaSetting.onclick = oaVersion.onclick;
+
+  advanced.insertAdjacentElement('afterend', oaSetting);
+}, 1000);
 
 const injCSS = x => {
   const el = document.createElement('style');
@@ -46,28 +58,26 @@ const injCSS = x => {
   document.body.appendChild(el);
 };
 
-injCSS(`
-[class^="socialLinks-"] + [class^="info-"] {
-  padding-right: 0;
-}
-
-#openasar-ver {
-  text-transform: none;
-  cursor: pointer;
-}
-
-#openasar-ver:hover {
-  text-decoration: underline;
-  color: var(--text-normal);
-}`);
-
 injCSS(`<css>`);
 
-openasar = {}; // Define global for any mods which want to know / etc
+// Define global for any mods which want to know / etc
+openasar = {};
 
-setInterval(() => { // Try init themesync
+// Try init themesync
+setInterval(() => {
   try {
     themesync();
   } catch (e) { }
 }, 10000);
 themesync();
+
+// DOM Optimizer - https://github.com/GooseMod/OpenAsar/wiki/DOM-Optimizer
+const optimize = orig => function(...args) {
+  if (typeof args[0].className === 'string' && (args[0].className.indexOf('activity') !== -1))
+    return setTimeout(() => orig.apply(this, args), 100);
+
+  return orig.apply(this, args);
+};
+
+Element.prototype.removeChild = optimize(Element.prototype.removeChild);
+// Element.prototype.appendChild = optimize(Element.prototype.appendChild);
